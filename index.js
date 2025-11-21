@@ -1,67 +1,118 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 
+const databasePool = require("./database");
+
 const app = express();
 const PORT = 3000;
 
-// middleware
 app.use(bodyParser.json());
 
-// mock database (in-memory)
-let todos = [
-  { id: 1, title: "Learn Express.js", done: false },
-  { id: 2, title: "Build Todo App", done: false },
-];
-
-app.get("/todos", (req, res) => {
-  res.json(todos);
+// GET all todos
+app.get("/todos", async (req, res) => {
+  let conn;
+  try {
+    conn = await databasePool.getConnection();
+    const rows = await conn.query("SELECT * FROM todos ORDER BY id DESC");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
 });
 
-app.get("/todos/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const todo = todos.find((t) => t.id === id);
-  if (!todo) return res.status(404).json({ message: "Todo not found" });
-  res.json(todo);
+// GET todo by id
+app.get("/todos/:id", async (req, res) => {
+  let conn;
+  try {
+    conn = await databasePool.getConnection();
+    const rows = await conn.query("SELECT * FROM todos WHERE id = ?", [
+      req.params.id,
+    ]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
 });
 
-app.post("/todos", (req, res) => {
-  const { title } = req.body;
-  if (!title) return res.status(400).json({ message: "Title is required" });
+// POST create todo
+app.post("/todos", async (req, res) => {
+  let conn;
+  try {
+    const { title } = req.body;
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
 
-  const newTodo = {
-    id: todos.length + 1,
-    title,
-    done: false,
-  };
+    conn = await databasePool.getConnection();
+    const result = await conn.query("INSERT INTO todos (title) VALUES (?)", [
+      title,
+    ]);
 
-  todos.push(newTodo);
-  res.status(201).json(newTodo);
+    res.status(201).json({
+      id: Number(result.insertId),
+      title,
+      done: false,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
 });
 
-app.put("/todos/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const { title, done } = req.body;
+// PUT update todo
+app.put("/todos/:id", async (req, res) => {
+  let conn;
+  try {
+    const { title, done } = req.body;
 
-  const todo = todos.find((t) => t.id === id);
-  if (!todo) return res.status(404).json({ message: "Todo not found" });
+    conn = await databasePool.getConnection();
 
-  if (title !== undefined) todo.title = title;
-  if (done !== undefined) todo.done = done;
+    const result = await conn.query(
+      "UPDATE todos SET title = ?, done = ? WHERE id = ?",
+      [title, done, req.params.id]
+    );
 
-  res.json(todo);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
+
+    res.json({ message: "Todo updated" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
 });
 
-app.delete("/todos/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = todos.findIndex((t) => t.id === id);
+// DELETE todo
+app.delete("/todos/:id", async (req, res) => {
+  let conn;
+  try {
+    conn = await databasePool.getConnection();
+    const result = await conn.query("DELETE FROM todos WHERE id = ?", [
+      req.params.id,
+    ]);
 
-  if (index === -1) return res.status(404).json({ message: "Todo not found" });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Todo not found" });
+    }
 
-  todos.splice(index, 1);
-  res.json({ message: "Todo deleted" });
+    res.json({ message: "Todo deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
