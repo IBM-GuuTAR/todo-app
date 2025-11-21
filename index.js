@@ -8,6 +8,10 @@ const PORT = 3000;
 
 app.use(bodyParser.json());
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // GET all todos
 app.get("/todos", async (req, res) => {
   try {
@@ -31,6 +35,20 @@ app.get("/todos/:id", async (req, res) => {
       return res.status(404).json({ message: "Todo not found" });
     }
     res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET poor all todos
+app.get("/todos-poor", async (req, res) => {
+  try {
+    await sleep(10_000);
+
+    const [rows] = await databasePool.query(
+      "SELECT * FROM todos ORDER BY id DESC"
+    );
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
