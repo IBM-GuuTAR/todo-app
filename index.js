@@ -5,7 +5,7 @@ const databasePool = require("./database");
 const fakeDatabasePool = require("./fakeDatabase");
 
 const app = express();
-const PORT = 3000;
+const PORT = 8080;
 
 app.use(bodyParser.json());
 
