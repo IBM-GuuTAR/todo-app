@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 
 const databasePool = require("./database");
+const fakeDatabasePool = require("./fakeDatabase");
 
 const app = express();
 const PORT = 3000;
@@ -16,6 +17,18 @@ function sleep(ms) {
 app.get("/todos", async (req, res) => {
   try {
     const [rows] = await databasePool.query(
+      "SELECT * FROM todos ORDER BY id DESC"
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fake database query
+app.get("/todos-fake", async (req, res) => {
+  try {
+    const [rows] = await fakeDatabasePool.query(
       "SELECT * FROM todos ORDER BY id DESC"
     );
     res.json(rows);
