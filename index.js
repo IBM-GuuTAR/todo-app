@@ -1,5 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const amqp = require("amqplib");
 
 const databasePool = require("./database");
 const fakeDatabasePool = require("./fakeDatabase");
@@ -12,6 +13,16 @@ app.use(bodyParser.json());
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+let channel;
+
+async function connectRabbitMQ() {
+  const connection = await amqp.connect({ hostname: "localhost", port: 5672 });
+  channel = await connection.createChannel();
+  await channel.assertQueue("task_queue", { durable: true });
+}
+
+connectRabbitMQ();
 
 // GET all todos
 app.get("/todos", async (req, res) => {
@@ -123,6 +134,28 @@ app.delete("/todos/:id", async (req, res) => {
     }
 
     res.json({ message: "Todo deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/todo-mq", (req, res) => {
+  try {
+    const { title } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    channel.sendToQueue("task_queue", Buffer.from(title), {
+      persistent: true,
+    });
+
+    res.status(201).json({
+      id: Number(result.insertId),
+      title,
+      done: false,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

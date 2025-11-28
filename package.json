@@ -10,6 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "@instana/collector": "^4.30.1",
+    "amqplib": "^0.10.9",
     "body-parser": "^2.2.0",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
