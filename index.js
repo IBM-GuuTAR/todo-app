@@ -152,7 +152,6 @@ app.post("/todo-mq", (req, res) => {
     });
 
     res.status(201).json({
-      id: Number(result.insertId),
       title,
       done: false,
     });
