@@ -1,2 +1,4 @@
 /node_modules
 .env
+
+/consumer/node_modules
