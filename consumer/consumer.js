@@ -1,11 +1,12 @@
+require("dotenv").config();
+
 const amqp = require("amqplib");
+
+const RABBITMQ_URL = process.env.RABBITMQ_URL || "amqp://localhost:5672";
 
 async function startConsumer() {
   try {
-    const connection = await amqp.connect({
-      hostname: "localhost",
-      port: 5672,
-    });
+    const connection = await amqp.connect(RABBITMQ_URL);
     const channel = await connection.createChannel();
 
     const queue = "task_queue";

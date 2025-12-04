@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "consumer.js",
   "dependencies": {
-    "amqplib": "^0.10.3"
+    "amqplib": "^0.10.3",
+    "dotenv": "^17.2.3"
   }
 }
