@@ -19,7 +19,8 @@ let channel;
 async function connectRabbitMQ() {
   const connection = await amqp.connect({ hostname: "localhost", port: 5672 });
   channel = await connection.createChannel();
-  await channel.assertQueue("task_queue", { durable: true });
+  await channel.assertQueue("todo_queue1", { durable: true });
+  await channel.assertQueue("todo_queue2", { durable: true });
 }
 
 connectRabbitMQ();
@@ -139,15 +140,36 @@ app.delete("/todos/:id", async (req, res) => {
   }
 });
 
-app.post("/todo-mq", (req, res) => {
+app.post("/todo-mq1", (req, res) => {
   try {
-    const { title } = req.body;
+    const { title, queue_ } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: "Title is required" });
     }
 
-    channel.sendToQueue("task_queue", Buffer.from(title), {
+    channel.sendToQueue("todo_queue1", Buffer.from(title), {
+      persistent: true,
+    });
+
+    res.status(201).json({
+      title,
+      done: false,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/todo-mq2", (req, res) => {
+  try {
+    const { title, queue_ } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    channel.sendToQueue("todo_queue2", Buffer.from(title), {
       persistent: true,
     });
 
