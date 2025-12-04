@@ -9,7 +9,7 @@ async function startConsumer() {
     const connection = await amqp.connect(RABBITMQ_URL);
     const channel = await connection.createChannel();
 
-    const queue = "task_queue";
+    const queue = process.env.RABBITMQ_QUEUE_NAME || "task_queue";
     await channel.assertQueue(queue, { durable: true });
 
     // Fair dispatch — only send 1 job at a time to each worker
